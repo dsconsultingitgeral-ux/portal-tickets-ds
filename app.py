@@ -49,18 +49,17 @@ else:
 
     registo = None
     try:
-        # Consulta totalmente isolada com captura de qualquer erro da base de dados
         res_ponto = supabase.table("picagens").select("*").eq("username", st.session_state.username).eq("data", hoje_str).execute()
         if res_ponto and res_ponto.data:
             registo = res_ponto.data[0]
     except Exception as e:
-        st.error(f"⚠️ Erro detalhado retornado pelo Supabase: {e}")
+        st.warning(f"Aviso de ligação à tabela de picagens: {e}")
 
-    col_p1, col_p2, col_p3, col_p4 = st.columns(4)
+    col_p1, _ = st.columns(2)
     now_time = datetime.now().strftime("%H:%M:%S")
 
     with col_p1:
-        if st.button("Entrada 🟢", disabled=bool(registo and registo.get("hora_entrada"))):
+        if st.button("Registar Entrada 🟢", disabled=bool(registo and registo.get("hora_entrada"))):
             try:
                 if not registo:
                     supabase.table("picagens").insert({
@@ -68,8 +67,7 @@ else:
                         "data": hoje_str,
                         "hora_entrada": now_time
                     }).execute()
-                else:
-                    supabase.table("picagens").update({"hora_entrada": now_time}).eq("id", registo["id"]).execute()
+                st.success("Entrada registada com sucesso!")
                 st.rerun()
             except Exception as e:
                 st.error(f"Erro ao inserir entrada: {e}")
