@@ -8,7 +8,7 @@ st.set_page_config(page_title="Gestão | Digital Solutions", layout="centered")
 def init_supabase():
     return create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
 
-supabase = init_supabase()
+supabase: Client = init_supabase()
 
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
@@ -45,16 +45,15 @@ else:
     st.markdown("### 🕒 Módulo de Picagem de Ponto")
     st.write(f"Data de hoje: {date.today().strftime('%d/%m/%Y')}")
 
-    # Consulta isolada e totalmente protegida contra qualquer erro de tabela/coluna
     registo = None
     try:
         r = supabase.table("picagens").select("*").eq("username", st.session_state.username).eq("data", str(date.today())).execute()
         if r and r.data:
             registo = r.data[0]
-    except Exception as err:
-        st.info("Tabela pronta a operar. Efetue a primeira marcação.")
+    except Exception:
+        pass
 
-    col_b1, col_b2 = st.columns(2)
+    col_b1, _ = st.columns(2)
     with col_b1:
         if st.button("Registar Entrada 🟢", disabled=bool(registo and registo.get("hora_entrada"))):
             try:
