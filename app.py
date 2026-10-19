@@ -176,3 +176,26 @@ else:
                         t_cat = tk.get('categoria', '')
                         t_prio = tk.get('prioridade', '')
                         t_desc = tk.get('descricao', '')
+
+                        st.markdown(f"""
+                            <div class="card-box">
+                                <b>#{t_id} - {t_titulo}</b> ({t_user})<br>
+                                <b>Categoria:</b> {t_cat} | <b>Prioridade:</b> {t_prio}<br>
+                                <b>Estado Atual:</b> {estado_atual}<br>
+                                <p style="margin-top:8px; color:#424245;">{t_desc}</p>
+                            </div>
+                        """, unsafe_allow_html=True)
+                        
+                        c_a1, c_a2 = st.columns(2)
+                        with c_a1:
+                            if st.button(f"Em Resolução #{t_id}", key=f"resolv_{t_id}"):
+                                supabase.table("tickets").update({"estado": "Em Resolução"}).eq("id", t_id).execute()
+                                st.rerun()
+                        with c_a2:
+                            if st.button(f"Fechar #{t_id}", key=f"fechar_{t_id}"):
+                                supabase.table("tickets").update({"estado": "Fechado"}).eq("id", t_id).execute()
+                                st.rerun()
+                else:
+                    st.info("Não existem tickets registados.")
+            except Exception as e:
+                st.error(f"Erro no painel admin: {e}")
