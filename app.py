@@ -141,7 +141,6 @@ if not st.session_state.logged_in:
                 st.error("Username ou password incorretos.")
 
 else:
-    # Cabeçalho com identificação do utilizador e botão de Terminar Sessão
     c_user, c_logout = st.columns([3, 1])
     with c_user:
         st.markdown(f"👋 **Bem-vindo, {st.session_state.nome}**")
@@ -173,25 +172,77 @@ else:
                 t_estado = t.get('estado', 'Aberto')
                 status_color = "🟢" if t_estado == "Aberto" else "⚪"
 
-                with st.container():
-                    html_card = f"""
-                        <div class="ticket-card">
-                            <b>#TK-{t_id}</b> | <b>Cliente:</b> {t_cliente} | <b>Tópico:</b> {t_topico}<br>
-                            <b>Assunto:</b> {t_assunto}<br>
-                            <p style='color: #555; margin-top: 5px;'>{t_msg}</p>
-                            <i>Email CC: {t_cc}</i><br>
-                            <b>Estado atual:</b> {status_color} {t_estado}
-                        </div>
-                    """
-                    st.markdown(html_card, unsafe_allow_html=True)
-                    
-                    if t_estado == "Aberto":
-                        if st.button(f"Marcar #TK-{t_id} como Resolvido", key=f"btn_{t_id}"):
-                            supabase.table("tickets").update({"estado": "Resolvido"}).eq("id", t_id).execute()
-                            st.success(f"Ticket #TK-{t_id} resolvido com sucesso!")
-                            st.rerun()
-                    st.markdown("---")
+                html_card = f"""
+                    <div class="ticket-card">
+                        <b>#TK-{t_id}</b> | <b>Cliente:</b> {t_cliente} | <b>Tópico:</b> {t_topico}<br>
+                        <b>Assunto:</b> {t_assunto}<br>
+                        <p style='color: #555; margin-top: 5px;'>{t_msg}</p>
+                        <i>Email CC: {t_cc}</i><br>
+                        <b>Estado atual:</b> {status_color} {t_estado}
+                    </div>
+                """
+                st.markdown(html_card, unsafe_allow_html=True)
+                
+                if t_estado == "Aberto":
+                    if st.button(f"Marcar #TK-{t_id} como Resolvido", key=f"btn_{t_id}"):
+                        supabase.table("tickets").update({"estado": "Resolvido"}).eq("id", t_id).execute()
+                        st.success(f"Ticket #TK-{t_id} resolvido com sucesso!")
+                        st.rerun()
+                st.markdown("---")
 
     # PERFIL CLIENTE NA APP DE TICKETS
     else:
-        st.markdown("### Abrir
+        st.markdown("### Abrir Novo Ticket")
+        with st.form("ticket_form", clear_on_submit=True):
+            topico = st.selectbox("Selecione o Tópico", ["Bug", "Reunião para Novo Projeto", "Orçamentos", "Dúvidas", "Outros"])
+            assunto = st.text_input("Assunto")
+            mensagem = st.text_area("Mensagem (Máximo 500 caracteres)", max_chars=500, help="Descreva detalhadamente o seu pedido.")
+            email_cc = st.text_input("Email em CC (Opcional - ex: colega@empresa.com)")
+            
+            submit_ticket = st.form_submit_button("Enviar Ticket")
+            
+            if submit_ticket:
+                if not assunto or not mensagem:
+                    st.warning("Por favor, preencha o assunto e a mensagem.")
+                else:
+                    data_insert = {
+                        "username_cliente": st.session_state.username,
+                        "topico": topico,
+                        "assunto": assunto,
+                        "mensagem": mensagem,
+                        "email_cc": email_cc,
+                        "estado": "Aberto"
+                    }
+                    res = supabase.table("tickets").insert(data_insert).execute()
+                    
+                    if res.data:
+                        novo_id = res.data[0]["id"]
+                        enviar_email_ticket(novo_id, st.session_state.username, topico, assunto, mensagem, email_cc)
+                        st.success(f"Ticket #TK-{novo_id} criado com sucesso! Foi enviado um email de confirmação.")
+                        st.rerun()
+
+        st.markdown("---")
+        st.markdown("### O seu Histórico de Tickets")
+        
+        response = supabase.table("tickets").select("*").eq("username_cliente", st.session_state.username).order("created_at", desc=True).execute()
+        cli_tickets = response.data
+        
+        if not cli_tickets:
+            st.info("Ainda não abriu nenhum ticket.")
+        else:
+            for t in cli_tickets:
+                t_id = t.get('id', '')
+                t_assunto = t.get('assunto', '')
+                t_topico = t.get('topico', '')
+                t_msg = t.get('mensagem', '')
+                t_estado = t.get('estado', 'Aberto')
+                status_color = "🟢" if t_estado == "Aberto" else "⚪"
+
+                html_cli_card = f"""
+                    <div class="ticket-card">
+                        <b>#TK-{t_id}</b> - <b>{t_assunto}</b> ({t_topico})<br>
+                        <p style='color: #555; margin-top: 5px;'>{t_msg}</p>
+                        <b>Estado:</b> {status_color} {t_estado}
+                    </div>
+                """
+                st.markdown(html_cli_card, unsafe_allow_html=True)
