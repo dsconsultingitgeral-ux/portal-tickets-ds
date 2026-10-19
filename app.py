@@ -51,7 +51,7 @@ supabase: Client = init_supabase()
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
     try:
-        st.image("logo.jpg", use_column_width=True)[cite: 1]
+        st.image("logo.jpg", use_column_width=True) # type: ignore
     except Exception:
         pass
 
@@ -116,7 +116,7 @@ else:
             if res_ponto and res_ponto.data:
                 registo = res_ponto.data[0]
         except Exception as e:
-            st.error(f"Aviso ao carregar dados do ponto: {e}")
+            st.warning("Aviso: A tabela de picagens ainda não respondeu ou está vazia. Podes efetuar a primeira marcação abaixo.")
 
         col_p1, col_p2, col_p3, col_p4 = st.columns(4)
         now_time = datetime.now().strftime("%H:%M:%S")
