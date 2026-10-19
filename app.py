@@ -103,10 +103,10 @@ col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
     try:
         st.image("logo.jpg", use_column_width=True)[cite: 1]
-    except:
-        st.markdown("<h2 style='text-align: center;'>DIGITAL SOLUTIONS</h2>", unsafe_allow_html=True)
+    except Exception:
+        pass
 
-st.markdown("<p style='text-align: center; color: #86868b; margin-bottom: 30px;'>Portal de Suporte e Gestão de Tickets</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #86868b; margin-top: 5px; margin-bottom: 30px;'>Portal de Suporte e Gestão de Tickets</p>", unsafe_allow_html=True)
 
 # --- 5. GESTÃO DE SESSÃO E LOGIN ---
 if "logged_in" not in st.session_state:
@@ -141,10 +141,16 @@ if not st.session_state.logged_in:
                 st.error("Username ou password incorretos.")
 
 else:
-    st.sidebar.markdown(f"**Utilizador:** {st.session_state.nome}")
-    if st.sidebar.button("Terminar Sessão"):
-        st.session_state.logged_in = False
-        st.rerun()
+    # Cabeçalho com identificação do utilizador e botão de Terminar Sessão
+    c_user, c_logout = st.columns([3, 1])
+    with c_user:
+        st.markdown(f"👋 **Bem-vindo, {st.session_state.nome}**")
+    with c_logout:
+        if st.button("Sair", key="btn_logout_main"):
+            st.session_state.logged_in = False
+            st.rerun()
+
+    st.markdown("---")
 
     # PERFIL ADMIN NA APP DE TICKETS
     if st.session_state.is_admin:
