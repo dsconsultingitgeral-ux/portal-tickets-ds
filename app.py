@@ -1,5 +1,6 @@
-from datetime import date
+from datetime import date, datetime
 import streamlit as st
+import pandas as pd
 from supabase import create_client, Client
 
 st.set_page_config(page_title="Gestão | Digital Solutions", layout="centered")
@@ -33,7 +34,7 @@ if not st.session_state.logged_in:
                 else:
                     st.error("Utilizador ou password incorretos.")
             except Exception as e:
-                st.error(f"Erro na ligação: {e}")
+                st.error(f"Erro no login: {e}")
 else:
     c1, c2 = st.columns([3, 1])
     c1.markdown(f"👋 **Bem-vindo(a), {st.session_state.nome}**")
@@ -42,35 +43,38 @@ else:
         st.rerun()
 
     st.markdown("---")
-    st.markdown("### 🕒 Módulo de Picagem de Ponto")
-    st.write(f"Data de hoje: {date.today().strftime('%d/%m/%Y')}")
+    st.markdown("### 🕒 Picagem de Ponto Diária")
+    hoje_str = str(date.today())
+    st.write(f"Data: {date.today().strftime('%d/%m/%Y')}")
 
     registo = None
     try:
-        r = supabase.table("picagens").select("*").eq("username", st.session_state.username).eq("data", str(date.today())).execute()
-        if r and r.data:
-            registo = r.data[0]
-    except Exception:
-        pass
+        # Consulta totalmente isolada com captura de qualquer erro da base de dados
+        res_ponto = supabase.table("picagens").select("*").eq("username", st.session_state.username).eq("data", hoje_str).execute()
+        if res_ponto and res_ponto.data:
+            registo = res_ponto.data[0]
+    except Exception as e:
+        st.error(f"⚠️ Erro detalhado retornado pelo Supabase: {e}")
 
-    col_b1, _ = st.columns(2)
-    with col_b1:
-        if st.button("Registar Entrada 🟢", disabled=bool(registo and registo.get("hora_entrada"))):
+    col_p1, col_p2, col_p3, col_p4 = st.columns(4)
+    now_time = datetime.now().strftime("%H:%M:%S")
+
+    with col_p1:
+        if st.button("Entrada 🟢", disabled=bool(registo and registo.get("hora_entrada"))):
             try:
-                import datetime as dt
-                hora_atual = dt.datetime.now().strftime("%H:%M:%S")
                 if not registo:
                     supabase.table("picagens").insert({
-                        "username": st.session_state.username, 
-                        "data": str(date.today()), 
-                        "hora_entrada": hora_atual
+                        "username": st.session_state.username,
+                        "data": hoje_str,
+                        "hora_entrada": now_time
                     }).execute()
-                st.success("Entrada registada com sucesso!")
+                else:
+                    supabase.table("picagens").update({"hora_entrada": now_time}).eq("id", registo["id"]).execute()
                 st.rerun()
             except Exception as e:
-                st.error(f"Erro ao inserir: {e}")
+                st.error(f"Erro ao inserir entrada: {e}")
 
     if registo:
-        st.markdown(f"**Estado atual:** Entrada registada às {registo.get('hora_entrada')}")
+        st.success(f"Entrada registada às {registo.get('hora_entrada')}")
     else:
-        st.warning("Ainda não tem entrada registada para hoje.")
+        st.info("Ainda não tem entrada registada hoje.")
